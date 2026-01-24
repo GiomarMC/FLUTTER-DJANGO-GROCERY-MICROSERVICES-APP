@@ -1,3 +1,4 @@
+// Clase que representa una lista de compras
 class ShoppingList {
     final int id;
     String dateOfPurchase;

@@ -5,12 +5,14 @@ import 'list_detail_screen.dart';
 import 'login_screen.dart';
 import '../services/auth_service.dart';
 
+// Pantalla principal que muestra las listas de compras del usuario
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+// Estado de la pantalla principal
 class _HomeScreenState extends State<HomeScreen> {
   final _groceryService = GroceryService();
   final _authService = AuthService();
@@ -22,12 +24,14 @@ class _HomeScreenState extends State<HomeScreen> {
     _refreshLists();
   }
 
+  // Método que actualiza la lista de compras
   void _refreshLists() {
     setState(() {
       _listsFuture = _groceryService.getMyLists();
     });
   }
 
+  // Método que crea una nueva lista de compras
   Future<void> _createList() async {
     final selectedDate = await showDatePicker(
       context: context,
@@ -49,6 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Método que edita la fecha de una lista de compras
   Future<void> _editListDate(ShoppingList list) async {
       if (list.status == 'closed') {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("No se puede editar una lista cerrada")));
@@ -74,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
   }
 
+  // Método que elimina una lista de compras
   Future<void> _deleteList(ShoppingList list) async {
       final confirm = await showDialog<bool>(
           context: context, 
@@ -105,6 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: "Cerrar Sesión",
             onPressed: () async {
               await _authService.logout();
               if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
@@ -115,43 +122,63 @@ class _HomeScreenState extends State<HomeScreen> {
       body: FutureBuilder<List<ShoppingList>>(
         future: _listsFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-          if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));
+          if (snapshot.connectionState == ConnectionState.waiting) {
+             return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+             return Center(
+               child: Column(
+                 mainAxisAlignment: MainAxisAlignment.center,
+                 children: [
+                   Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
+                   const SizedBox(height: 16),
+                   Text('Error: ${snapshot.error}', textAlign: TextAlign.center),
+                   TextButton(onPressed: _refreshLists, child: const Text("Reintentar"))
+                 ],
+               ),
+             );
+          }
           
           final lists = snapshot.data ?? [];
-          if (lists.isEmpty) return const Center(child: Text("No tienes listas. Toca + para crear una."));
+          if (lists.isEmpty) {
+             return Center(
+               child: Column(
+                 mainAxisAlignment: MainAxisAlignment.center,
+                 children: [
+                   Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey.shade400),
+                   const SizedBox(height: 24),
+                   Text(
+                     "No tienes listas aún",
+                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                       color: Colors.grey.shade600,
+                       fontWeight: FontWeight.bold
+                     ),
+                   ),
+                   const SizedBox(height: 8),
+                   const Text("Toca el botón + para crear tu primera lista", style: TextStyle(color: Colors.grey)),
+                 ],
+               ),
+             );
+          }
 
           return ListView.builder(
+            padding: const EdgeInsets.all(12),
             itemCount: lists.length,
             itemBuilder: (context, index) {
               final list = lists[index];
+              final isClosed = list.status == 'closed';
               return Card(
-                margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                child: ListTile(
-                  leading: Icon(
-                    list.status == 'open' ? Icons.shopping_cart_outlined : Icons.check_circle,
-                    color: list.status == 'open' ? Colors.blue : Colors.green,
-                  ),
-                  title: Text("Compra del ${list.dateOfPurchase}"),
-                  subtitle: Text("Estado: ${list.status}"),
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (value) {
-                         if (value == 'edit') _editListDate(list);
-                         if (value == 'delete') _deleteList(list);
-                    },
-                    itemBuilder: (BuildContext context) {
-                        return [
-                            const PopupMenuItem(
-                                value: 'edit',
-                                child: Text("Editar Fecha"),
-                            ),
-                            const PopupMenuItem(
-                                value: 'delete',
-                                child: Text("Eliminar Lista", style: TextStyle(color: Colors.red)),
-                            ),
-                        ];
-                    },
-                  ),
+                elevation: 0, 
+                color: isClosed ? Colors.grey.shade100 : Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(
+                    color: isClosed ? Colors.grey.shade300 : Theme.of(context).primaryColor.withOpacity(0.2)
+                  )
+                ),
+                margin: const EdgeInsets.only(bottom: 12),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
                   onTap: () {
                     Navigator.push(
                       context,
@@ -160,6 +187,100 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ).then((_) => _refreshLists());
                   },
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isClosed ? Colors.grey.shade200 : Theme.of(context).primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            isClosed ? Icons.check : Icons.shopping_cart,
+                            color: isClosed ? Colors.grey : Theme.of(context).primaryColor,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Compra del ${list.dateOfPurchase}",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: isClosed ? Colors.green.shade100 : Colors.blue.shade100,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      isClosed ? "Completada" : "En curso",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: isClosed ? Colors.green.shade800 : Colors.blue.shade800,
+                                      ),
+                                    ),
+                                  ),
+                                  if (isClosed && list.totalSpent != null) ...[
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      "\$${list.totalSpent}",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey.shade700
+                                      ),
+                                    )
+                                  ]
+                                ],
+                              )
+                            ],
+                          ),
+                        ),
+                        PopupMenuButton<String>(
+                          icon: Icon(Icons.more_vert, color: Colors.grey.shade600),
+                          onSelected: (value) {
+                               if (value == 'edit') _editListDate(list);
+                               if (value == 'delete') _deleteList(list);
+                          },
+                          itemBuilder: (BuildContext context) {
+                              return [
+                                  const PopupMenuItem(
+                                      value: 'edit',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.calendar_today, size: 18),
+                                          SizedBox(width: 8),
+                                          Text("Editar Fecha")
+                                        ],
+                                      ),
+                                  ),
+                                  const PopupMenuItem(
+                                      value: 'delete',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                          SizedBox(width: 8),
+                                          Text("Eliminar", style: TextStyle(color: Colors.red))
+                                        ],
+                                      ),
+                                  ),
+                              ];
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               );
             },
@@ -168,7 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _createList,
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add_shopping_cart),
       ),
     );
   }

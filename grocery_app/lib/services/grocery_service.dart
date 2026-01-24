@@ -7,10 +7,12 @@ import '../models/list_item.dart';
 import '../models/product.dart';
 import 'auth_service.dart';
 
+// Clase que maneja la lógica de la aplicación
 class GroceryService {
     final _storage = const FlutterSecureStorage();
     final AuthService authService = AuthService();
 
+    // Método que obtiene los headers para las peticiones
     Future<Map<String, String>> _getHeaders() async {
         final token = await _storage.read(key: 'access_token');
         return {
@@ -19,6 +21,7 @@ class GroceryService {
         };
     }
 
+    // Método que obtiene las listas de compras
     Future<List<ShoppingList>> getMyLists() async {
         final url = Uri.parse('${Environment.apiUrl}/api/shopping-lists/');
         final headers = await _getHeaders();
@@ -37,6 +40,7 @@ class GroceryService {
         }
     }
 
+    // Método que crea una lista de compras
     Future<ShoppingList> createList(String date) async {
         final url = Uri.parse('${Environment.apiUrl}/api/shopping-lists/');
         final headers = await _getHeaders();
@@ -62,6 +66,7 @@ class GroceryService {
         }
     }
 
+    // Método que actualiza una lista de compras
     Future<void> updateList(int listId, {String? date, String? status, double? total}) async {
         final url = Uri.parse('${Environment.apiUrl}/api/shopping-lists/$listId/');
         final headers = await _getHeaders();
@@ -86,6 +91,7 @@ class GroceryService {
         }
     }
 
+    // Método que elimina una lista de compras
     Future<void> deleteList(int listId) async {
         final url = Uri.parse('${Environment.apiUrl}/api/shopping-lists/$listId/');
         final headers = await _getHeaders();
@@ -101,6 +107,7 @@ class GroceryService {
         }
     }
 
+    // Método que obtiene los items de una lista de compras
     Future<List<ListItem>> getItems(int listId) async {
         final url = Uri.parse('${Environment.apiUrl}/api/items/?shopping_list=$listId');
         final headers = await _getHeaders();
@@ -120,6 +127,7 @@ class GroceryService {
         }
     }
     
+    // Método que agrega un item a una lista de compras
     Future<Product?> addItem({
         required int listId,
         required double quantity,
@@ -147,7 +155,6 @@ class GroceryService {
             throw Exception('Debe proporcionar un producto o nombre de producto');
         }
 
-        print('BODY ENVIADO: ${jsonEncode(bodyData)}');
         final response = await http.post(
             url,
             headers: headers,
@@ -176,6 +183,7 @@ class GroceryService {
         return null;
     }
 
+    // Método que actualiza un item de una lista de compras
     Future<void> updateItem(int itemId, double quantity, String unit) async {
         final url = Uri.parse('${Environment.apiUrl}/api/items/$itemId/');
         final headers = await _getHeaders();
@@ -198,6 +206,7 @@ class GroceryService {
         }
     }
 
+    // Método que elimina un item de una lista de compras
     Future<void> deleteItem(int itemId) async {
         final url = Uri.parse('${Environment.apiUrl}/api/items/$itemId/');
         final headers = await _getHeaders();
@@ -213,6 +222,7 @@ class GroceryService {
         }
     }
 
+    // Método que crea un producto
     Future<int> createProduct(String name, String category) async {
         final headers = await _getHeaders();
         final response = await http.post(
@@ -236,6 +246,7 @@ class GroceryService {
         }
     }
 
+    // Método que cambia el estado de un item
     Future<void> toggleItemStatus(int itemId, bool isBought) async {
         final url = Uri.parse('${Environment.apiUrl}/api/items/$itemId/');
         final headers = await _getHeaders();
@@ -258,6 +269,7 @@ class GroceryService {
         }
     }
 
+    // Método que obtiene los productos
     Future<List<Product>> getProducts() async {
         final url = Uri.parse('${Environment.apiUrl}/api/products/');
         final headers = await _getHeaders();

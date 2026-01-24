@@ -1,3 +1,4 @@
+// Clase que representa un producto
 class Product {
     final int id;
     final String name;

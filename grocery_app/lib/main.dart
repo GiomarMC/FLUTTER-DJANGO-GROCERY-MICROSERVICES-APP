@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'config/app_theme.dart';
 import 'screens/login_screen.dart';
 
 void main() {
@@ -13,10 +14,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Grocery App',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-      ),
+      theme: AppTheme.lightTheme,
       home: LoginScreen(),
     );
   }
