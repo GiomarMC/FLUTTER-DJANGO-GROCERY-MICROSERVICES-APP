@@ -62,6 +62,45 @@ class GroceryService {
         }
     }
 
+    Future<void> updateList(int listId, {String? date, String? status, double? total}) async {
+        final url = Uri.parse('${Environment.apiUrl}/api/shopping-lists/$listId/');
+        final headers = await _getHeaders();
+
+        final Map<String, dynamic> bodyData = {};
+        if (date != null) bodyData['date_of_purchase'] = date;
+        if (status != null) bodyData['status'] = status;
+        if (total != null) bodyData['total_spent'] = total;
+
+        final response = await http.patch(
+            url,
+            headers: headers,
+            body: jsonEncode(bodyData),
+        );
+
+        if (response.statusCode == 401) {
+            await authService.refreshToken();
+            return updateList(listId, date: date, status: status, total: total);
+        }
+        if (response.statusCode != 200) {
+            throw Exception('Error actualizando lista: ${response.body}');
+        }
+    }
+
+    Future<void> deleteList(int listId) async {
+        final url = Uri.parse('${Environment.apiUrl}/api/shopping-lists/$listId/');
+        final headers = await _getHeaders();
+
+        final response = await http.delete(url, headers: headers);
+
+        if (response.statusCode == 401) {
+            await authService.refreshToken();
+            return deleteList(listId);
+        }
+        if (response.statusCode != 204) {
+             throw Exception('Error eliminando lista: ${response.body}');
+        }
+    }
+
     Future<List<ListItem>> getItems(int listId) async {
         final url = Uri.parse('${Environment.apiUrl}/api/items/?shopping_list=$listId');
         final headers = await _getHeaders();
@@ -135,6 +174,43 @@ class GroceryService {
         }
 
         return null;
+    }
+
+    Future<void> updateItem(int itemId, double quantity, String unit) async {
+        final url = Uri.parse('${Environment.apiUrl}/api/items/$itemId/');
+        final headers = await _getHeaders();
+
+        final response = await http.patch(
+            url,
+            headers: headers,
+            body: jsonEncode({
+                'quantity': quantity,
+                'unit': unit,
+            }),
+        );
+
+        if (response.statusCode == 401) {
+            await authService.refreshToken();
+            return updateItem(itemId, quantity, unit);
+        }
+        if (response.statusCode != 200) {
+            throw Exception('Error actualizando item: ${response.body}');
+        }
+    }
+
+    Future<void> deleteItem(int itemId) async {
+        final url = Uri.parse('${Environment.apiUrl}/api/items/$itemId/');
+        final headers = await _getHeaders();
+
+        final response = await http.delete(url, headers: headers);
+
+        if (response.statusCode == 401) {
+            await authService.refreshToken();
+            return deleteItem(itemId);
+        }
+        if (response.statusCode != 204) {
+             throw Exception('Error eliminando item: ${response.body}');
+        }
     }
 
     Future<int> createProduct(String name, String category) async {

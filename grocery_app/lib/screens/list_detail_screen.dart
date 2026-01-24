@@ -54,12 +54,149 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
   }
 
   void _toggleItem(ListItem item) async {
+    if (widget.shoppingList.status == 'closed') {
+         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("No se puede modificar una lista cerrada")));
+         return;
+    }
     try {
       await _groceryService.toggleItemStatus(item.id, !item.isBought);
       _refreshItems();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Error al actualizar")));
     }
+  }
+
+  Future<void> _closeList() async {
+      double total = 0.0;
+      final confirm = await showDialog<bool>(
+          context: context, 
+          builder: (ctx) {
+              return AlertDialog(
+                  title: const Text("Cerrar Lista"),
+                  content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                          const Text("Para cerrar la lista, ingresa el monto total gastado:"),
+                          const SizedBox(height: 10),
+                          TextField(
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              decoration: const InputDecoration(labelText: "Total Gastado", prefixText: "\$ "),
+                              onChanged: (val) => total = double.tryParse(val) ?? 0.0,
+                          )
+                      ],
+                  ),
+                  actions: [
+                      TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancelar")),
+                      ElevatedButton(
+                          onPressed: () {
+                              if (total <= 0) {
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Ingresa un monto válido")));
+                                  return;
+                              }
+                              Navigator.pop(ctx, true);
+                          }, 
+                          child: const Text("Cerrar Lista"),
+                      ),
+                  ],
+              );
+          }
+      );
+
+      if (confirm == true) {
+          try {
+              await _groceryService.updateList(widget.shoppingList.id, status: 'closed', total: total);
+              setState(() {
+                  widget.shoppingList.status = 'closed';
+                  widget.shoppingList.totalSpent = total;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("¡Lista cerrada con éxito!")));
+          } catch(e) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error cerrando lista: $e")));
+          }
+      }
+  }
+
+  void _deleteItem(ListItem item) async {
+       if (widget.shoppingList.status == 'closed') return;
+       final confirm = await showDialog<bool>(
+          context: context, 
+          builder: (ctx) => AlertDialog(
+              title: const Text("Eliminar Item"),
+              content: const Text("¿Eliminar este producto de la lista?"),
+              actions: [
+                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancelar")),
+                  TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Eliminar", style: TextStyle(color: Colors.red))),
+              ],
+          )
+      );
+
+      if (confirm == true) {
+          try {
+              await _groceryService.deleteItem(item.id);
+              _refreshItems();
+          } catch(e) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error eliminando item: $e")));
+          }
+      }
+  }
+
+  void _editItem(ListItem item) {
+       if (widget.shoppingList.status == 'closed') return;
+       double quantity = item.quantity;
+       String unit = item.unit;
+       
+       showDialog(
+           context: context,
+           builder: (ctx) {
+               return AlertDialog(
+                   title: Text("Editar ${item.productName}"),
+                   content: StatefulBuilder(
+                       builder: (context, setDialogState) {
+                           return Column(
+                               mainAxisSize: MainAxisSize.min,
+                               children: [
+                                   TextField(
+                                     controller: TextEditingController(text: quantity.toString()),
+                                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                     decoration: const InputDecoration(labelText: "Cantidad"),
+                                     onChanged: (val) => quantity = double.tryParse(val) ?? 1.0,
+                                   ),
+                                   const SizedBox(height: 10),
+                                   DropdownButtonFormField<String>(
+                                      value: unit,
+                                      items: const [
+                                        DropdownMenuItem(value: 'unit', child: Text('Unidad')),
+                                        DropdownMenuItem(value: 'kg', child: Text('Kilogramo')),
+                                        DropdownMenuItem(value: 'g', child: Text('Gramo')),
+                                        DropdownMenuItem(value: 'l', child: Text('Litro')),
+                                        DropdownMenuItem(value: 'ml', child: Text('Mililitro')),
+                                      ],
+                                      onChanged: (val) {
+                                          if (val != null) setDialogState(() => unit = val);
+                                      },
+                                   )
+                               ],
+                           );
+                       }
+                   ),
+                   actions: [
+                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancelar")),
+                        ElevatedButton(
+                            onPressed: () async {
+                                try {
+                                    await _groceryService.updateItem(item.id, quantity, unit);
+                                    Navigator.pop(ctx);
+                                    _refreshItems();
+                                } catch(e) {
+                                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error actualizando: $e")));
+                                }
+                            },
+                            child: const Text("Guardar"),
+                        )
+                   ],
+               );
+           }
+       );
   }
 
   void _showAddItemDialog() {
@@ -238,6 +375,14 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Lista: ${widget.shoppingList.dateOfPurchase}"),
+        actions: [
+            if (widget.shoppingList.status == 'open')
+                IconButton(
+                    icon: const Icon(Icons.check_circle_outline),
+                    tooltip: "Cerrar Lista",
+                    onPressed: _closeList,
+                )
+        ],
       ),
       body: FutureBuilder<List<ListItem>>(
         future: _itemsFuture,
@@ -281,16 +426,30 @@ class _ListDetailScreenState extends State<ListDetailScreen> {
                   value: item.isBought,
                   activeColor: Colors.green,
                   onChanged: (val) => _toggleItem(item),
+                  secondary: widget.shoppingList.status == 'open'
+                    ? PopupMenuButton<String>(
+                        onSelected: (val) {
+                            if (val == 'edit') _editItem(item);
+                            if (val == 'delete') _deleteItem(item);
+                        },
+                        itemBuilder: (context) => [
+                            const PopupMenuItem(value: 'edit', child: Text("Editar")),
+                            const PopupMenuItem(value: 'delete', child: Text("Eliminar", style: TextStyle(color: Colors.red))),
+                        ],
+                      )
+                    : null,
                 ),
               );
             },
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddItemDialog,
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: widget.shoppingList.status == 'open' 
+        ? FloatingActionButton(
+            onPressed: _showAddItemDialog,
+            child: const Icon(Icons.add),
+          )
+        : null,
     );
   }
 }
