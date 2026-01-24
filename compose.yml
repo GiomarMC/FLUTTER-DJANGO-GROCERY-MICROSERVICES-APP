@@ -1,0 +1,80 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: grocery_db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init_sql:/docker-entrypoint-initdb.d
+    networks:
+      - grocery_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    
+  users:
+    build: ./user_service
+    container_name: grocery_users
+    command: python manage.py runserver 0.0.0.0:8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./user_service:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - grocery_network
+  
+  lists:
+    build: ./shopping_list_service
+    container_name: grocery_lists
+    command: python manage.py runserver 0.0.0.0:8001
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./shopping_list_service:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - grocery_network
+
+  products:
+    build: ./product_service
+    container_name: grocery_products
+    command: python manage.py runserver 0.0.0.0:8002
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./product_service:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - grocery_network
+  
+  gateway:
+    build: ./gateway
+    ports:
+      - "80:80"
+    depends_on:
+      - users
+      - lists
+      - products
+    networks:
+      - grocery_network
+
+networks:
+  grocery_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
