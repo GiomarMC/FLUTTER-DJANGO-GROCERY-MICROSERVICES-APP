@@ -96,7 +96,7 @@ DATABASES = {
         "HOST": os.getenv("DB_HOST"),
         "PORT": os.getenv("DB_PORT"),
         "OPTIONS": {
-            "options": "-c search_path=shopping_list"
+            "options": "-c search_path=list_schema"
         }
     }
 }
