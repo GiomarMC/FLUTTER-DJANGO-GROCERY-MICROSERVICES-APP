@@ -2,6 +2,12 @@ from rest_framework import serializers
 from .models import ShoppingList, ShoppingListItem
 from django.utils import timezone
 import requests
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+PRODUCT_SERVICE_URL = os.getenv("PRODUCT_SERVICE_URL")
 
 class ShoppingListSerializer(serializers.ModelSerializer):
     """
@@ -114,7 +120,7 @@ class ShoppingListItemSerializer(serializers.ModelSerializer):
             "Content-Type": "application/json"
         }
         
-        url = "http://products:8002/api/products/"
+        url = PRODUCT_SERVICE_URL + '/api/products/'
         
         product_id = data.get('product_id')
         product_name = data.get('product_name')

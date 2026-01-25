@@ -14,13 +14,15 @@ services:
     networks:
       - grocery_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
       interval: 5s
       timeout: 5s
       retries: 5
-    
+
   users:
-    build: ./user_service
+    build:
+      context: ./user_service
+      dockerfile: Dockerfile.dev
     container_name: grocery_users
     command: python manage.py runserver 0.0.0.0:8000
     ports:
@@ -32,9 +34,11 @@ services:
         condition: service_healthy
     networks:
       - grocery_network
-  
+
   lists:
-    build: ./shopping_list_service
+    build:
+      context: ./shopping_list_service
+      dockerfile: Dockerfile.dev
     container_name: grocery_lists
     command: python manage.py runserver 0.0.0.0:8001
     ports:
@@ -48,7 +52,9 @@ services:
       - grocery_network
 
   products:
-    build: ./product_service
+    build:
+      context: ./product_service
+      dockerfile: Dockerfile.dev
     container_name: grocery_products
     command: python manage.py runserver 0.0.0.0:8002
     ports:
@@ -60,9 +66,12 @@ services:
         condition: service_healthy
     networks:
       - grocery_network
-  
+
   gateway:
-    build: ./gateway
+    build:
+      context: ./gateway
+      args:
+        ENV: dev
     ports:
       - "80:80"
     depends_on:
