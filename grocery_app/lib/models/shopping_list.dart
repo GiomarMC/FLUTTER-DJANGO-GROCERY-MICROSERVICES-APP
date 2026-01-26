@@ -1,8 +1,9 @@
+// Clase que representa una lista de compras
 class ShoppingList {
     final int id;
-    final String dateOfPurchase;
-    final String status;
-    final double? totalSpent;
+    String dateOfPurchase;
+    String status;
+    double? totalSpent;
 
     ShoppingList({
         required this.id,

@@ -1,3 +1,4 @@
+// Clase que representa un item de la lista de compras
 class ListItem {
     final int id;
     final int shoppingListId;

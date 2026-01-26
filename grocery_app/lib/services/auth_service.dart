@@ -4,10 +4,12 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../config/environment.dart';
 
+// Clase que maneja la autenticación
 class AuthService {
   final _storage = const FlutterSecureStorage();
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
+  // Método que inicia sesión con Google
   Future<Map<String, dynamic>> signInWithGoogle() async {
     try {
         final GoogleSignInAccount? googleuser = await _googleSignIn.signIn();
@@ -39,12 +41,11 @@ class AuthService {
     }
   }
 
+  // Método que envía el token de Google al backend
   Future<Map<String, dynamic>> _sendTokenToBackend(String googleToken) async {
     final url = Uri.parse('${Environment.apiUrl}/api/auth/google/');
 
     try {
-        print("Intentando conectar a: $url");
-
         final response = await http.post(
             url,
             headers: {'Content-type': 'application/json'},
@@ -52,9 +53,6 @@ class AuthService {
                 'google_token': googleToken
             }),
         );
-
-        print("Status Code: ${response.statusCode}");
-        print("Body: ${response.body}");
 
         if (response.statusCode == 200) {
             final data = jsonDecode(response.body);
@@ -89,11 +87,13 @@ class AuthService {
     }
   }
 
+  // Método que cierra sesión
   Future<void> logout() async {
     await _googleSignIn.signOut();
     await _storage.deleteAll();
   }
 
+  // Método que actualiza el token de acceso
   Future<void> refreshToken() async {
     final refresh = await _storage.read(key: 'refresh_token');
     if (refresh == null) throw Exception("Sesión expirada");
