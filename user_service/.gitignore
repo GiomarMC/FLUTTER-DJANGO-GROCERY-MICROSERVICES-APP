@@ -10,6 +10,7 @@ static/
 
 # Environments
 .env
+.env.production.yaml
 .venv/
 env/
 venv/
@@ -28,3 +29,9 @@ yarn-error.log
 
 # Databases
 user_db
+
+# Production and environment-specific files
+Dockerfile
+nginx.prod.con.template
+.env.production.yml
+google-services.json
