@@ -1,0 +1,9 @@
+FROM nginx:alpine
+
+# Específico para DESARROLLO
+# Copia la plantilla DEV que apunta a http://users:8000, etc.
+COPY nginx.dev.conf.template /etc/nginx/templates/default.conf.template
+
+# En local no necesitamos inyectar el puerto dinámico de Google, 
+# pero Nginx espera escuchar en algún lado.
+ENV PORT=80

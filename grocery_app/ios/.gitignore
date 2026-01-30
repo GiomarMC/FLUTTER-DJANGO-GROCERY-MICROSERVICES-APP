@@ -32,3 +32,9 @@ Runner/GeneratedPluginRegistrant.*
 !default.mode2v3
 !default.pbxuser
 !default.perspectivev3
+
+# Production and environment-specific files
+Dockerfile
+nginx.prod.conf.template
+.env.production.yml
+google-services.json

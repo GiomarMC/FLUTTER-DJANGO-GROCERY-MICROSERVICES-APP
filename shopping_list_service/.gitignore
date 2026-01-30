@@ -10,6 +10,7 @@ static/
 
 # Environments
 .env
+.env.production.yaml
 .venv/
 env/
 venv/
@@ -25,3 +26,9 @@ venv.bak/
 node_modules/
 npm-debug.log
 yarn-error.log
+
+# Production and environment-specific files
+Dockerfile
+nginx.prod.conf.template
+.env.production.yml
+google-services.json

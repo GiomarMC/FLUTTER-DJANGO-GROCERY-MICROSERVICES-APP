@@ -70,6 +70,7 @@ services:
   gateway:
     build:
       context: ./gateway
+      dockerfile: Dockerfile.dev
       args:
         ENV: dev
     ports:
